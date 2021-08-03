@@ -62,6 +62,7 @@ namespace agora.media_player
             {
                 AgoraMpkNative.Detach(AgoraMpkNative.GetIrisMpkRawData(_irisMpkPtr), _irisVideoFrameBufferManagerPtr);
                 // AgoraMpkNative.FreeIrisVideoFrameBufferManager(_irisVideoFrameBufferManagerPtr); // Currently, iris free this buffer when calling Detach function.
+                _irisVideoFrameBufferManagerPtr = IntPtr.Zero;
 
                 UnregisterPlayerObserver();
             }
@@ -502,6 +503,7 @@ namespace agora.media_player
         [MonoPInvokeCallback(typeof(Func_Event_Native))]
         internal static void OnEvent(string @event, string data)
         {
+            // return;
             if (CallbackObject == null || CallbackObject._CallbackQueue == null) return;
             switch (@event)
             {
@@ -561,6 +563,7 @@ namespace agora.media_player
         [MonoPInvokeCallback(typeof(Func_EventWithBuffer_Native))]
         internal static void OnEventWithBuffer(string @event, string data, IntPtr buffer, uint length)
         {
+            return;
             var byteData = new byte[length];
             if (buffer != IntPtr.Zero) Marshal.Copy(buffer, byteData, 0, (int) length);
             if (CallbackObject == null || CallbackObject._CallbackQueue == null) return;
