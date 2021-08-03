@@ -291,10 +291,9 @@ namespace agora.media_player
 
             MediaPlayerObserverNative.MediaPlayerObserver = null;
             MediaPlayerObserverNative.CallbackObject = null;
-
-            AgoraMpkNative.UnsetIrisMpkEventHandler(_irisMpkPtr, _irisEventHandlerHandleNative); 
             if (_callbackObject != null) _callbackObject.Release();
             _callbackObject = null;
+            AgoraMpkNative.UnsetIrisMpkEventHandler(_irisMpkPtr, _irisEventHandlerHandleNative);
             Marshal.FreeHGlobal(_irisCEventHandlerNative);
             _irisEventHandlerHandleNative = IntPtr.Zero;
             return (int) MEDIA_PLAYER_ERROR.PLAYER_ERROR_NONE;
