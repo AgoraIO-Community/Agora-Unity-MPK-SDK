@@ -17,6 +17,10 @@ namespace agora.media_player
     using IrisMpkPtr = IntPtr;
     using IrisEventHandlerHandleNative = IntPtr;
     using IrisVideoFrameBufferManagerPtr = IntPtr;
+    using IrisMpkCVideoFrameObserverNativeMarshal = IntPtr;
+    using IrisMpkVideoFrameObserverHandleNative = IntPtr;
+    using IrisMpkCAudioFrameObserverNativeMarshal = IntPtr;
+    using IrisMpkAudioFrameObserverHandleNative = IntPtr;
 
     public class AgoraMediaPlayer : IAgoraMediaPlayer
     {
@@ -29,6 +33,14 @@ namespace agora.media_player
         private IrisCEventHandler _irisCEventHandler;
         private IrisEventHandlerHandleNative _irisCEventHandlerNative;
         private AgoraCallbackObject _callbackObject;
+
+        private IrisMpkCVideoFrameObserverNativeMarshal _irisMpkCVideoFrameObserverNative;
+        private IrisMpkCVideoFrameObserver _irisMpkCVideoFrameObserver;
+        private IrisMpkVideoFrameObserverHandleNative _irisMpkVideoFrameObserverHandleNative;
+
+        private IrisMpkCAudioFrameObserverNativeMarshal _irisMpkCAudioFrameObserverNative;
+        private IrisMpkCAudioFrameObserver _irisMpkCAudioFrameObserver;
+        private IrisMpkAudioFrameObserverHandleNative _irisMpkAudioFrameObserverHandleNative;
 
         private IrisVideoFrameBufferManagerPtr _irisVideoFrameBufferManagerPtr;
 
@@ -282,7 +294,7 @@ namespace agora.media_player
             }
 
             MediaPlayerObserverNative.MediaPlayerObserver = observer;
-            return 0;
+            return (int) MEDIA_PLAYER_ERROR.PLAYER_ERROR_NONE;
         }
 
         public override int UnregisterPlayerObserver()
@@ -300,24 +312,106 @@ namespace agora.media_player
             return (int) MEDIA_PLAYER_ERROR.PLAYER_ERROR_NONE;
         }
 
-        public override int RegisterVideoFrameObserver(IAgoraMpkVideoFrameObserver observer)
+        public override int RegisterVideoFrameObserver(IAgoraMpkVideoFrameObserver observer, bool needByteArray = true)
         {
-            throw new NotImplementedException();
+            SetIrisVideoFrameObserver();
+            MpkVideoFrameObserverNative.needByteArray = needByteArray;
+            MpkVideoFrameObserverNative.VideoFrameObserver = observer;
+            return (int) MEDIA_PLAYER_ERROR.PLAYER_ERROR_NONE;
         }
 
         public override int UnRegisterVideoFrameObserver()
         {
-            throw new NotImplementedException();
+            MpkVideoFrameObserverNative.needByteArray = false;
+            UnSetIrisVideoFrameObserver();
+            return (int) MEDIA_PLAYER_ERROR.PLAYER_ERROR_NONE;
         }
 
-        public override int RegisterAudioFrameObserver(IAgoraMpkAudioFrameObserver observer)
+        private void SetIrisVideoFrameObserver()
         {
-            throw new NotImplementedException();
+            if (_irisMpkVideoFrameObserverHandleNative != IntPtr.Zero) return;
+
+            _irisMpkCVideoFrameObserver = new IrisMpkCVideoFrameObserver
+            {
+                OnVideoFrame = MpkVideoFrameObserverNative.OnCaptureVideoFrame
+            };
+
+            var irisRtcCVideoFrameObserverNativeLocal = new IrisMpkCVideoFrameObserverNative
+            {
+                OnVideoFrame =
+                    Marshal.GetFunctionPointerForDelegate(_irisMpkCVideoFrameObserver.OnVideoFrame)
+            };
+
+            _irisMpkCVideoFrameObserverNative =
+                Marshal.AllocHGlobal(Marshal.SizeOf(irisRtcCVideoFrameObserverNativeLocal));
+            Marshal.StructureToPtr(irisRtcCVideoFrameObserverNativeLocal, _irisMpkCVideoFrameObserverNative, true);
+
+            _irisMpkVideoFrameObserverHandleNative = AgoraMpkNative.RegisterVideoFrameObserver(
+                AgoraMpkNative.GetIrisMpkRawData(_irisMpkPtr), _irisMpkCVideoFrameObserverNative, 0,
+                "AgoraMediaPlayer");
+        }
+
+        private void UnSetIrisVideoFrameObserver()
+        {
+            if (_irisMpkVideoFrameObserverHandleNative == IntPtr.Zero) return;
+
+            AgoraMpkNative.UnRegisterVideoFrameObserver(AgoraMpkNative.GetIrisMpkRawData(_irisMpkPtr),
+                _irisMpkVideoFrameObserverHandleNative, "AgoraMediaPlayer");
+            _irisMpkVideoFrameObserverHandleNative = IntPtr.Zero;
+            MpkVideoFrameObserverNative.VideoFrameObserver = null;
+            _irisMpkCVideoFrameObserver = new IrisMpkCVideoFrameObserver();
+            Marshal.FreeHGlobal(_irisMpkCVideoFrameObserverNative);
+        }
+
+        public override int RegisterAudioFrameObserver(IAgoraMpkAudioFrameObserver observer, bool needByteArray = true)
+        {
+            SetIrisAudioFrameObserver();
+            MpkAudioFrameObserverNative.needByteArray = needByteArray;
+            MpkAudioFrameObserverNative.AudioFrameObserver = observer;
+            return (int) MEDIA_PLAYER_ERROR.PLAYER_ERROR_NONE;
         }
 
         public override int UnRegisterAudioFrameObserver()
         {
-            throw new NotImplementedException();
+            MpkAudioFrameObserverNative.needByteArray = false;
+            UnSetIrisAudioFrameObserver();
+            return (int) MEDIA_PLAYER_ERROR.PLAYER_ERROR_NONE;
+        }
+
+        private void SetIrisAudioFrameObserver()
+        {
+            if (_irisMpkAudioFrameObserverHandleNative != IntPtr.Zero) return;
+
+            _irisMpkCAudioFrameObserver = new IrisMpkCAudioFrameObserver
+            {
+                OnAudioFrame = MpkAudioFrameObserverNative.OnRecordAudioFrame
+            };
+
+            var irisMpkCAudioFrameObserverNativeLocal = new IrisMpkCAudioFrameObserverNative
+            {
+                OnAudioFrame =
+                    Marshal.GetFunctionPointerForDelegate(_irisMpkCAudioFrameObserver.OnAudioFrame)
+            };
+
+            _irisMpkCAudioFrameObserverNative =
+                Marshal.AllocHGlobal(Marshal.SizeOf(irisMpkCAudioFrameObserverNativeLocal));
+            Marshal.StructureToPtr(irisMpkCAudioFrameObserverNativeLocal, _irisMpkCAudioFrameObserverNative, true);
+
+            _irisMpkAudioFrameObserverHandleNative = AgoraMpkNative.RegisterAudioFrameObserver(
+                AgoraMpkNative.GetIrisMpkRawData(_irisMpkPtr), _irisMpkCAudioFrameObserverNative, 0,
+                "AgoraMediaPlayer");
+        }
+
+        private void UnSetIrisAudioFrameObserver()
+        {
+            if (_irisMpkAudioFrameObserverHandleNative == IntPtr.Zero) return;
+
+            AgoraMpkNative.UnRegisterAudioFrameObserver(AgoraMpkNative.GetIrisMpkRawData(_irisMpkPtr),
+                _irisMpkAudioFrameObserverHandleNative, "AgoraMediaPlayer");
+            _irisMpkAudioFrameObserverHandleNative = IntPtr.Zero;
+            MpkAudioFrameObserverNative.AudioFrameObserver = null;
+            _irisMpkCAudioFrameObserver = new IrisMpkCAudioFrameObserver();
+            Marshal.FreeHGlobal(_irisMpkCAudioFrameObserverNative);
         }
 
         public override int Connect(string token, string channelId, string userId)

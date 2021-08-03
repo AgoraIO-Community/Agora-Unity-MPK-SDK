@@ -16,6 +16,7 @@ namespace agora.media_player
     {
         internal static IAgoraMpkVideoFrameObserver VideoFrameObserver;
         private static readonly VideoFrame CaptureVideoFrame = new VideoFrame();
+        internal static bool needByteArray = false;
 
         [MonoPInvokeCallback(typeof(Func_VideoFrameLocal_Native))]
         internal static bool OnCaptureVideoFrame(IntPtr videoFramePtr)
@@ -23,39 +24,46 @@ namespace agora.media_player
             if (VideoFrameObserver == null) return true;
 
             var videoFrame = (IrisMpkVideoFrame) (Marshal.PtrToStructure(videoFramePtr, typeof(IrisMpkVideoFrame)) ??
-                                                        new IrisMpkVideoFrame());
-            
+                                                  new IrisMpkVideoFrame());
+
             var ifConverted = VideoFrameObserver.GetVideoFormatPreference() != VIDEO_FRAME_TYPE.FRAME_TYPE_YUV420;
             var videoFrameConverted = ifConverted
                 ? AgoraMpkNative.ConvertVideoFrame(ref videoFrame, VideoFrameObserver.GetVideoFormatPreference())
                 : videoFrame;
 
-            if (CaptureVideoFrame.height != videoFrameConverted.height ||
-                CaptureVideoFrame.yStride != videoFrameConverted.y_stride ||
-                CaptureVideoFrame.uStride != videoFrameConverted.u_stride ||
-                CaptureVideoFrame.vStride != videoFrameConverted.v_stride)
+            if (needByteArray)
             {
-                CaptureVideoFrame.yBuffer = new byte[videoFrameConverted.y_buffer_length];
-                CaptureVideoFrame.uBuffer = new byte[videoFrameConverted.u_buffer_length];
-                CaptureVideoFrame.vBuffer = new byte[videoFrameConverted.v_buffer_length];
+                if (CaptureVideoFrame.height != videoFrameConverted.height ||
+                    CaptureVideoFrame.yStride != videoFrameConverted.y_stride ||
+                    CaptureVideoFrame.uStride != videoFrameConverted.u_stride ||
+                    CaptureVideoFrame.vStride != videoFrameConverted.v_stride)
+                {
+                    CaptureVideoFrame.yBuffer = new byte[videoFrameConverted.y_buffer_length];
+                    CaptureVideoFrame.uBuffer = new byte[videoFrameConverted.u_buffer_length];
+                    CaptureVideoFrame.vBuffer = new byte[videoFrameConverted.v_buffer_length];
+                }
+
+                if (videoFrameConverted.y_buffer != IntPtr.Zero)
+                    Marshal.Copy(videoFrameConverted.y_buffer, CaptureVideoFrame.yBuffer, 0,
+                        (int) videoFrameConverted.y_buffer_length);
+                if (videoFrameConverted.u_buffer != IntPtr.Zero)
+                    Marshal.Copy(videoFrameConverted.u_buffer, CaptureVideoFrame.uBuffer, 0,
+                        (int) videoFrameConverted.u_buffer_length);
+                if (videoFrameConverted.v_buffer != IntPtr.Zero)
+                    Marshal.Copy(videoFrameConverted.v_buffer, CaptureVideoFrame.vBuffer, 0,
+                        (int) videoFrameConverted.v_buffer_length);
             }
 
-            if (videoFrameConverted.y_buffer != IntPtr.Zero)
-                Marshal.Copy(videoFrameConverted.y_buffer, CaptureVideoFrame.yBuffer, 0,
-                    (int) videoFrameConverted.y_buffer_length);
-            if (videoFrameConverted.u_buffer != IntPtr.Zero)
-                Marshal.Copy(videoFrameConverted.u_buffer, CaptureVideoFrame.uBuffer, 0,
-                    (int) videoFrameConverted.u_buffer_length);
-            if (videoFrameConverted.v_buffer != IntPtr.Zero)
-                Marshal.Copy(videoFrameConverted.v_buffer, CaptureVideoFrame.vBuffer, 0,
-                    (int) videoFrameConverted.v_buffer_length);
             CaptureVideoFrame.width = videoFrameConverted.width;
             CaptureVideoFrame.height = videoFrameConverted.height;
             CaptureVideoFrame.yBufferPtr = videoFrameConverted.y_buffer;
+            CaptureVideoFrame.yBufferPtrLength = videoFrameConverted.y_buffer_length;
             CaptureVideoFrame.yStride = videoFrameConverted.y_stride;
             CaptureVideoFrame.uBufferPtr = videoFrameConverted.u_buffer;
+            CaptureVideoFrame.uBufferPtrLength = videoFrameConverted.u_buffer_length;
             CaptureVideoFrame.uStride = videoFrameConverted.u_stride;
             CaptureVideoFrame.vBufferPtr = videoFrameConverted.v_buffer;
+            CaptureVideoFrame.vBufferPtrLength = videoFrameConverted.v_buffer_length;
             CaptureVideoFrame.vStride = videoFrameConverted.v_stride;
             CaptureVideoFrame.rotation = videoFrameConverted.rotation;
             CaptureVideoFrame.renderTimeMs = videoFrameConverted.render_time_ms;

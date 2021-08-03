@@ -16,6 +16,7 @@ namespace agora.media_player
     {
         internal static IAgoraMpkAudioFrameObserver AudioFrameObserver;
         internal static readonly AudioFrame RecordAudioFrame = new AudioFrame();
+        internal static bool needByteArray = false;
 
         [MonoPInvokeCallback(typeof(Func_AudioFrameLocal_Native))]
         internal static bool OnRecordAudioFrame(IntPtr audioFramePtr)
@@ -23,20 +24,25 @@ namespace agora.media_player
             if (AudioFrameObserver == null) return true;
 
             var audioFrame = (IrisMpkAudioFrame) (Marshal.PtrToStructure(audioFramePtr, typeof(IrisMpkAudioFrame)) ??
-                                                        new IrisMpkAudioFrame());
+                                                  new IrisMpkAudioFrame());
 
-            if (RecordAudioFrame.channels != audioFrame.channels ||
-                RecordAudioFrame.samples != audioFrame.samples ||
-                RecordAudioFrame.bytesPerSample != audioFrame.bytes_per_sample)
+            if (needByteArray)
             {
-                RecordAudioFrame.buffer = new byte[audioFrame.buffer_length];
+                if (RecordAudioFrame.channels != audioFrame.channels ||
+                    RecordAudioFrame.samples != audioFrame.samples ||
+                    RecordAudioFrame.bytesPerSample != audioFrame.bytes_per_sample)
+                {
+                    RecordAudioFrame.buffer = new byte[audioFrame.buffer_length];
+                }
+
+                if (audioFrame.buffer != IntPtr.Zero)
+                    Marshal.Copy(audioFrame.buffer, RecordAudioFrame.buffer, 0, (int) audioFrame.buffer_length);
             }
 
-            if (audioFrame.buffer != IntPtr.Zero)
-                Marshal.Copy(audioFrame.buffer, RecordAudioFrame.buffer, 0, (int) audioFrame.buffer_length);
             RecordAudioFrame.type = audioFrame.type;
             RecordAudioFrame.samples = audioFrame.samples;
             RecordAudioFrame.bufferPtr = audioFrame.buffer;
+            RecordAudioFrame.bufferPtrLength = audioFrame.buffer_length;
             RecordAudioFrame.bytesPerSample = audioFrame.bytes_per_sample;
             RecordAudioFrame.channels = audioFrame.channels;
             RecordAudioFrame.samplesPerSec = audioFrame.samples_per_sec;

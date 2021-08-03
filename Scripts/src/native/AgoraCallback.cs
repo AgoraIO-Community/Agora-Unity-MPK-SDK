@@ -50,7 +50,7 @@ namespace agora.media_player
     [StructLayout(LayoutKind.Sequential)]
     internal struct IrisMpkCVideoFrameObserverNative
     {
-        internal IntPtr OnAudioFrame;
+        internal IntPtr OnVideoFrame;
     }
 
     internal struct IrisMpkCVideoFrameObserver

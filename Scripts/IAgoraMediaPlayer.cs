@@ -33,9 +33,9 @@ namespace agora.media_player
         public abstract int SetRenderMode(RENDER_MODE_TYPE renderMode);
         public abstract int RegisterPlayerObserver(IAgoraMediaPlayerObserver observer);
         public abstract int UnregisterPlayerObserver();
-        public abstract int RegisterVideoFrameObserver(IAgoraMpkVideoFrameObserver observer);
+        public abstract int RegisterVideoFrameObserver(IAgoraMpkVideoFrameObserver observer, bool needByteArray = true);
         public abstract int UnRegisterVideoFrameObserver();
-        public abstract int RegisterAudioFrameObserver(IAgoraMpkAudioFrameObserver observer);
+        public abstract int RegisterAudioFrameObserver(IAgoraMpkAudioFrameObserver observer, bool needByteArray = true);
         public abstract int UnRegisterAudioFrameObserver();
         public abstract int Connect(string token, string channelId, string userId);
         public abstract int Disconnect();

@@ -25,7 +25,7 @@ namespace agora.media_player
     internal class VideoStreamManager : IVideoStreamManager, IDisposable
     {
         private IAgoraMediaPlayer _agoraMediaPlayer;
-        private IrisRtcRendererCacheConfigHandle _irisRtcRendererCacheConfigHandle;
+        private IrisRtcRendererCacheConfigHandle _irisVideoFrameBufferDelegateHandle;
         private IrisMpkCVideoFrameBufferNative _videoFrameBuffer;
         private bool _disposed;
 
@@ -52,7 +52,6 @@ namespace agora.media_player
 
             if (irisMediaPlayer != IntPtr.Zero)
             {
-                var rawDataPtr = AgoraMpkNative.GetIrisMpkRawData(irisMediaPlayer);
                 var managerPtr = (_agoraMediaPlayer as AgoraMediaPlayer).GetIrisMpkVideoFrameBufferManagerPtr();
                 _videoFrameBuffer = new IrisMpkCVideoFrameBufferNative
                 {
@@ -61,7 +60,7 @@ namespace agora.media_player
                     resize_width = width,
                     resize_height = height
                 };
-                _irisRtcRendererCacheConfigHandle =
+                _irisVideoFrameBufferDelegateHandle =
                     AgoraMpkNative.EnableVideoFrameBuffer(managerPtr, ref _videoFrameBuffer, uid, channel_id);
                 return (int) MEDIA_PLAYER_ERROR.PLAYER_ERROR_NONE;
             }
@@ -82,7 +81,6 @@ namespace agora.media_player
 
             if (irisMediaPlayer != IntPtr.Zero)
             {
-                var rawDataPtr = AgoraMpkNative.GetIrisMpkRawData(irisMediaPlayer);
                 var managerPtr = (_agoraMediaPlayer as AgoraMediaPlayer).GetIrisMpkVideoFrameBufferManagerPtr();
 
                 AgoraMpkNative.DisableVideoFrameBufferByUid(managerPtr, uid, channel_id);
@@ -103,7 +101,6 @@ namespace agora.media_player
 
             if (irisMediaPlayer != IntPtr.Zero)
             {
-                var rawDataPtr = AgoraMpkNative.GetIrisMpkRawData(irisMediaPlayer);
                 var managerPtr = (_agoraMediaPlayer as AgoraMediaPlayer).GetIrisMpkVideoFrameBufferManagerPtr();
 
                 return AgoraMpkNative.GetVideoFrame(managerPtr, ref video_frame, out is_new_frame, uid, channel_id);
